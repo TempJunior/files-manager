@@ -5,34 +5,133 @@ namespace ByteBankIO;
 
 partial class Program
 {
-    private string filePath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "resources", "contas.txt");
+    private readonly string filePath =
+        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "resources", "contas.txt");
+
+    private string fileContents;
+
+    public void ReadFromConsoleInput()
+    {
+        fileContents = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "resources", "testeConsole.txt");
+        
+        // Cria o arquivo com encoding UTF-8
+        using (var fs = new FileStream(fileContents, FileMode.Create))
+        {
+            using (var writer = new StreamWriter(fs, Encoding.UTF8))
+            {
+                string input;
+                
+                Console.WriteLine("Digite texto para escrever no arquivo (digite 'exit' para sair):");
+                
+                do
+                {
+                    Console.Write("> ");
+                    input = Console.ReadLine()!;
+                    
+                    if (input.ToLower() != "exit")
+                    {
+                        writer.WriteLine(input);
+                        writer.Flush(); // Força a escrita no arquivo
+                        Console.WriteLine("✅ Texto adicionado ao arquivo!");
+                    }
+                    
+                } while (input.ToLower() != "exit");
+                
+                Console.WriteLine("📁 Arquivo salvo com sucesso!");
+                Console.WriteLine($"📍 Localização: {Path.GetFullPath(fileContents)}");
+            }
+        }
+    }
+    public void TesteBufferAndFlush()
+    {
+        fileContents = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "resources", "testeFlush.txt");
+
+        using (var fs = new FileStream(fileContents, FileMode.Create))
+        {
+            using var sw = new StreamWriter(fs, Encoding.UTF8);
+            for (int i = 0; i < 100000; i++)
+            {
+                // o Flush envia automaticamente o Buffer para o metodo de escrita - StreamWriter
+                sw.WriteLine($"Line {i}");
+                sw.Flush(); // Despeja o buffer para o StreamWriter direto
+                Console.WriteLine($"Line {i} sucess writer - Press Any Key to continue");
+                Console.ReadLine();
+            }
+        }
+    }
+
+    public void
+        CreateFileWithStreamWriter() //Cria usando um formato mais simples com StreamWriter que já lida com Strings
+    {
+        fileContents = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "resources",
+            "exportadasStreamWriter.txt");
+
+        using (var fileStream = new FileStream(fileContents, FileMode.Create))
+        {
+            using var streamWriter = new StreamWriter(fileStream);
+            var content = "4789, 78554, 9876.69, Joselito Junior";
+            streamWriter.Write(content);
+            Console.WriteLine("File created");
+        }
+    }
+
+    //Cria um novo arquivo com o FileMode.Create
+    public void CreateFile()
+    {
+        // Path onde vai ser criado o arquivo
+        fileContents = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "resources", "exportadas.txt");
+
+        try
+        {
+            using (var streamFile = new FileStream(fileContents, FileMode.Create)) // FileStream - Trabalha com Bytes
+            {
+                var contaAsString = "456, 7894, 4785.47, Junior Oliveira";
+
+                var encoding = Encoding.UTF8;
+
+                var buffer = encoding.GetBytes(contaAsString);
+                streamFile.Write(buffer, 0, buffer.Length);
+
+                Console.WriteLine("File created");
+            }
+        }
+        catch (DirectoryNotFoundException e)
+        {
+            Console.WriteLine($"Directory {Path.GetFullPath(fileContents)} not found");
+            Console.WriteLine(e.Message);
+        }
+
+        {
+        }
+    }
 
     public void GeneratedJsonFile()
     {
         // Pega a lista de contas com saldo acima de 2000
         var contasFiltradas = FilterByBalanceAboveTwoThousand();
-        
+
         // Configurações para o JSON (formatação bonita)
         var options = new JsonSerializerOptions
         {
             WriteIndented = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
-        
+
         // Converte a lista para JSON
         var jsonString = JsonSerializer.Serialize(contasFiltradas, options);
-        
+
         // Define o caminho do arquivo JSON
-        var jsonFilePath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "resources", "contas_filtradas.json");
-        
+        var jsonFilePath =
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "resources", "contas_filtradas.json");
+
         // Escreve o arquivo JSON
         File.WriteAllText(jsonFilePath, jsonString);
-        
+
         Console.WriteLine($"✅ Arquivo JSON gerado com sucesso!");
         Console.WriteLine($"📁 Localização: {Path.GetFullPath(jsonFilePath)}");
         Console.WriteLine($"📊 Total de contas: {contasFiltradas.Count}");
     }
-    
+
     public List<ContaCorrente> FilterByBalanceAboveTwoThousand()
     {
         List<ContaCorrente> list = ListContas();
@@ -42,7 +141,7 @@ partial class Program
 
     public List<ContaCorrente> ListContas()
     {
-        List <ContaCorrente> contas = new List<ContaCorrente>();
+        List<ContaCorrente> contas = new List<ContaCorrente>();
         using (var fileStream = new FileStream(filePath, FileMode.Open))
         {
             // StreamReader já lida com Strings ao inves de Bytes
@@ -51,7 +150,7 @@ partial class Program
             //var line = reader.ReadLine();
             Console.WriteLine("Printing line");
             //Console.Write(line);
-            
+
             //var text = reader.ReadToEnd(); // Lê o arquivo completo
             // Carrega o arquivo completo de uma só vez
             //Console.WriteLine(text);
@@ -63,9 +162,11 @@ partial class Program
                 var line = reader.ReadLine()!;
                 var conta = ConvertFileToContaCorrente(line);
                 contas.Add(conta);
-                Console.WriteLine($"Conta numero: {conta.Numero} -- Agencia : {conta.Agencia} - Saldo: {conta.Saldo} -- Titular: {conta.Titular.Nome}");
+                Console.WriteLine(
+                    $"Conta numero: {conta.Numero} -- Agencia : {conta.Agencia} - Saldo: {conta.Saldo} -- Titular: {conta.Titular.Nome}");
             }
 
+            reader.Close();
             return contas;
         }
     }
